@@ -16,7 +16,7 @@ Dependencies:
 * torch | 1.7.1
 * python | 3.7
 
-**Please use Transformer from our repo, because we adapted transformers to our generation task. The main files we changed are:**
+**Please use transformers from our repo, because we adapted transformers to our generation task. The main files we changed are:**
 * transformer/generation_utils.py
 * transformer/models/blenderbot_small
 
