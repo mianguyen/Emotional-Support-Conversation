@@ -125,6 +125,9 @@ We integrate codes for training, evaluating, generating, interacting in ONE file
 </details>
 
 * eval\test
+<details>
+<summary>show code</summary>
+
  ```python
  class Args():
     def __init__(self):    
@@ -169,8 +172,12 @@ We integrate codes for training, evaluating, generating, interacting in ONE file
         self.turn = False
         self.role = False
 ```
-
+<\details>
+ 
 * generating on test set
+ 
+<details>
+<summary>show code</summary>
  ```python
  class Args():
     def __init__(self):    
@@ -215,6 +222,8 @@ We integrate codes for training, evaluating, generating, interacting in ONE file
         self.turn = False
         self.role = False
 ```
+ 
+ <\details>
 
 
 # Bugs in original implementation
