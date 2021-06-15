@@ -14,9 +14,8 @@ Interact with Blender Joint Model:
 
 python BlenderEmotionalSupport.py 
 Parameter:
-`
-class Args():
 
+class Args():
     def __init__(self):    
         self.output_dir = './blender_strategy/checkpoint-2130'
         self.model_name_or_path = './blender-small'        
@@ -57,4 +56,4 @@ class Args():
         self.strategy = True
         self.turn = False
         self.role = False
-        `
+   
