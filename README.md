@@ -73,6 +73,7 @@ Please use Transformer from our repo. Because we adapted Transformer to our Task
 We integrate codes for training, evaluating, generating, interacting in ONE file. SO JUST CHANGE THE PARAMETERS!
 
 * train
+<details>
  ```python
  class Args():
     def __init__(self):    
@@ -117,6 +118,7 @@ We integrate codes for training, evaluating, generating, interacting in ONE file
         self.turn = False
         self.role = False
 ```
+</details>
 * eval\test
  ```python
  class Args():
