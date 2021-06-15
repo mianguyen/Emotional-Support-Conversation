@@ -75,7 +75,7 @@ We integrate codes for training, evaluating, generating, interacting in ONE file
 
 * train
 <details>
-<summary>点击时的区域标题</summary>
+<summary>show code</summary>
  
  ```python
  class Args():
@@ -121,7 +121,9 @@ We integrate codes for training, evaluating, generating, interacting in ONE file
         self.turn = False
         self.role = False
 ```
+ 
 </details>
+
 * eval\test
  ```python
  class Args():
