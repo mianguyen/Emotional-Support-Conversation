@@ -12,9 +12,11 @@ Data and codes for ACL 2021 paper: Towards Emotional Support Dialog Systems
 # Environment
 
 Dependencies:
-* transformers | 4.2.2
-* torch | 1.7.1
-* python | 3.7
+| package name | version |
+| ---- | ---- |
+| transformers | 4.2.2 |
+| torch | 1.7.1 |
+| python | 3.7 |
 
 **Please use transformers from our repo, because we adapted transformers to our generation task. The main files we changed are:**
 * transformer/generation_utils.py
