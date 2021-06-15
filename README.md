@@ -18,6 +18,7 @@ Dependencies:
 
 **Please use transformers from our repo, because we adapted transformers to our generation task. The main files we changed are:**
 * transformer/generation_utils.py
+* transformer/generation_logits_process.py
 * transformer/models/blenderbot_small
 
 
