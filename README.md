@@ -11,7 +11,12 @@ Data and codes for ACL 2021 paper: Towards Emotional Support Dialog Systems
 
 # Environment
 
-Please use Transformer from our repo. Because we adapted Transformer to our Task, the main files we changed are:
+Dependencies:
+* transformers | 4.2.2
+* torch | 1.7.1
+* python | 3.7
+
+**Please use Transformer from our repo, because we adapted Transformer to our generation task. The main files we changed are:**
 * transformer/generation_utils.py
 * transformer/models/blenderbot_small
 
