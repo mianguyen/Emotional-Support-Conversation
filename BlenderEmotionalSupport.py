@@ -948,11 +948,8 @@ def generate_and_evaluate():
         gts.append(c_text.split("EOS")[-1].strip())
         gts[idx] = " ".join(gts[idx].split(" ")[3:])
         next_strategy_id = max(tokenizer.encode(gts[idx]))
-        #chat_history = "EOS".join(c_text.split("EOS")[:-1])
         chat_history = c_text
-        #print("his:",chat_history)
         f = construct_conv_ESD(idx, chat_history, tokenizer, eos = True, pad=False, cls=False, strategy=False,generation=True)
-        #print(chat_history)
         paras = {}
         input_ids = torch.tensor([f.input_ids], dtype=torch.long).to(args.device)
         paras["attention_mask"] =  input_ids.ne(tokenizer.pad_token_id)
@@ -963,11 +960,10 @@ def generate_and_evaluate():
             eos_token_id=tokenizer.eos_token_id, temperature=0.7,
             top_p=0.9, top_k = 30, do_sample=True, repetition_penalty=1.03).cpu()
         print("DialoGPT: {}".format(tokenizer.decode(chat_history_ids[:, :][0], skip_special_tokens=True)))
-        #print(chat_history_ids[:, input_ids.shape[-1]:][0])
         refs.append(tokenizer.decode(chat_history_ids[:, :][0], skip_special_tokens=True))
-    print(len(gts), len(refs))
-
-    with open("./generated_data/generated_pretrained_single_p9t7k3rp3.json","w",encoding="utf-8") as f:
+    write_path = "./generated_data/generated_pretrained_single_p9t7k3rp3.json"
+    print("write result to:", write_path)
+    with open(wirte_path, "w",encoding="utf-8") as f:
         json.dump(refs,f,indent=2,ensure_ascii=False)
     with open("./generated_data/ref_strategy.json","w",encoding="utf-8") as f:
         json.dump(gts,f,indent=2,ensure_ascii=False)
