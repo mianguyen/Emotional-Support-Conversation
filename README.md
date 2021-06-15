@@ -4,6 +4,10 @@ Data and codes for ACL 2021 paper: Towards Emotional Support Dialog Systems
 
 ## News
 - (2021-04) Collect more conversations with more topics. ESConv now contians 1410 conversations with 10 topic problems.
+- (2021-06) Fix bugs of the implementation in orginal paper and update new results.
+
+
+
 
 
 
@@ -112,4 +116,9 @@ We integrate codes for training, evaluating, generating, interacting in ONE file
 * generating on eval\test set
 
 
+
+# Bugs in original implementation
+We wrongly adopted sentence-level ppl to calculate ppl on test set which should have been corpus-level. Commonly the result of sentence-level ppl is lower than corpus-level. Here we update the new ppl:
+Blenderbot Joint/Oracle : 18.61 (originally 16.03)
+DialoGPT Joint/Oracle : 19.09 (originally 15.19)
 
