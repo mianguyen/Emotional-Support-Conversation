@@ -8,7 +8,7 @@ GPT and GPT-2 are fine-tuned using a causal language modeling (CLM) loss while B
 using a masked language modeling (MLM) loss.
 """
 import os
-os.environ["CUDA_VISIBLE_DEVICES"] = "5"
+os.environ["CUDA_VISIBLE_DEVICES"] = "0"
 import glob
 import logging
 import pickle
@@ -121,9 +121,6 @@ class InputFeatures_train(object):
             self.input_len = input_len
 
 
-
-
-
 class InputFeatures_blender(object):
     def __init__(self, encoder_feature, decoder_feature):
         self.conv_id = encoder_feature.conv_id
@@ -146,64 +143,8 @@ class InputFeatures_blender(object):
 
 
 
-class GPT2FeatureDataset(Dataset):
-    """ pytorch dataset for GPT2 training """
-    def __init__(self, features, max_len=None):
-        self.features = features
-        self.max_len = max_len  # this max_len do truncate
-
-    def __getitem__(self, i):
-        feat_dict = self.features[i]
-        if self.max_len is not None and feat_dict['input_len'] > self.max_len:
-            # tuncate on the left side (context)
-            feat_dict['input_ids'] = feat_dict['input_ids'][-self.max_len:]
-            feat_dict['position_ids'] = feat_dict['position_ids'][
-                -self.max_len:]
-            feat_dict['token_type_ids'] = feat_dict['token_type_ids'][
-                -self.max_len:]
-            feat_dic['role_ids'] = feat_dict['role_ids'][-self.max_len:]
-            feat_dict['lm_labels'] = feat_dict['lm_labels'][-self.max_len:]
-        try:
-            for s in ['context_len', 'response_len']:
-                if s in feat_dict.keys():
-                    print("db file missing "+s)
-                    del feat_dict[s]
-        except Exception:
-            import pdb
-            pdb.set_trace()
-
-        feat = InputFeatures_train(**feat_dict)
-        return feat
-
-    def __len__(self):
-        return len(self.features)
-
-    @staticmethod
-    def collate(features):
-        input_ids = pad_sequence([torch.tensor(f.input_ids, dtype=torch.long)
-                                  for f in features],
-                                 batch_first=True, padding_value=0)
-        position_ids = pad_sequence([torch.tensor(f.position_ids,
-                                                  dtype=torch.long)
-                                     for f in features],
-                                    batch_first=True, padding_value=0)
-        token_type_ids = pad_sequence([torch.tensor(f.token_type_ids,
-                                                    dtype=torch.long)
-                                       for f in features],
-                                      batch_first=True, padding_value=0)
-        role_ids = pad_sequence([torch.tensor(f.role_ids, 
-                                              dtype=torch.long) 
-                                      for f in features],
-                                      batch_first=True, padding_value=0)
-        labels = pad_sequence([torch.tensor(f.lm_labels, dtype=torch.long)
-                               for f in features],
-                              batch_first=True, padding_value=-1)
-        return (input_ids, position_ids, token_type_ids, role_ids, labels)
-
-
-
-
-def _make_feature(id_, sents, rls, ts, eos, pad=True, block_size=512, strategy_labels=None, evaluate=False, str_embd=False, generation=False):
+def _make_feature(id_, sents, rls, ts, eos, pad=True, block_size=512, strategy_labels=None, evaluate=False, str_embd=False, generation=False):   
+    # we did't use role label and turn number in modeling as they did't carry significant improvement. However, codes still remain here.
     if len(sents) == 0:
         return InputFeatures_train([], [], [], [], [],
                             [], [] , [], [])
@@ -272,7 +213,7 @@ def _make_feature(id_, sents, rls, ts, eos, pad=True, block_size=512, strategy_l
     elif len(input_ids) == 1:
         print(input_ids, lm_labels, token_type_ids, roles)
     if True:
-        # if it is for generation, the last sentence of  context is the last sentence
+        # if it is for generation, the last sentence of context is the last sentence
         cls_position = len(input_ids)-1-input_ids[::-1].index(eos)
     else:
         # if not, the last sentence of context is the second last sentence
@@ -330,9 +271,13 @@ def _get_inputs_from_text(text, tokenizer, strategy=True, cls = False):
     return inputs, roles, turns, strategy_labels
 
 def construct_conv_ESD(idx, row, tokenizer, eos = True, pad=True, cls=False, evaluate=False, strategy=True, generation=False):
+    #  process input text
     inputs, roles, turns, strategy_labels = _get_inputs_from_text("EOS".join(row.split("EOS")[:-1]), tokenizer, strategy=strategy)
+    # process output (decoder input) text
     d_inputs, d_roles, d_turns, d_strategy_labels = _get_inputs_from_text(row.split("EOS")[-1], tokenizer, strategy=strategy)
+    # make feature for input text
     feature = _make_feature(idx, inputs, roles, turns, tokenizer.eos_token_id, pad=pad, strategy_labels=strategy_labels, evaluate=evaluate, str_embd=True, generation=generation)
+    # make feature for output (decoder input) text
     d_feature = _make_feature(idx, d_inputs, d_roles, d_turns, tokenizer.eos_token_id, pad=pad, strategy_labels=d_strategy_labels, evaluate=evaluate, str_embd=True, generation=generation)
     feature = InputFeatures_blender(feature, d_feature) 
     return feature
@@ -480,9 +425,7 @@ def _rotate_checkpoints(args, checkpoint_prefix="checkpoint", use_mtime=False) -
         logger.info("Deleting older checkpoint [{}] due to args.save_total_limit".format(checkpoint))
         shutil.rmtree(checkpoint)
 
-#collapse
 # Training of model
-
 def train(args, train_dataset, model: PreTrainedModel, tokenizer: PreTrainedTokenizer) -> Tuple[int, float]:
     """ Train the model """
     if args.local_rank in [-1, 0]:
@@ -506,16 +449,6 @@ def train(args, train_dataset, model: PreTrainedModel, tokenizer: PreTrainedToke
 
     model = model.module if hasattr(model, "module") else model  # Take care of distributed/parallel training
     model.resize_token_embeddings(len(tokenizer))
-    # add_special_tokens_(model, tokenizer)
-    #for k,v in model.named_parameters():
-    #    if "transformer" in  k:
-    #        v.requires_grad = False
-    #    print(k, v.requires_grad)
-    #for n in model.multiple_choice_head.parameters():
-    #    n.requires_grad = True
-
-    #for k,v in model.named_parameters():
-    #    print('{}: {}'.format(k, v.requires_grad))
     # Prepare optimizer and schedule (linear warmup and decay)
     no_decay = ["bias", "LayerNorm.weight"]
     optimizer_grouped_parameters = [
@@ -615,27 +548,18 @@ def train(args, train_dataset, model: PreTrainedModel, tokenizer: PreTrainedToke
                 steps_trained_in_current_epoch -= 1
                 continue
             input_ids, position_ids, turn_ids, role_ids, labels, cls_positions, cls_labels, strategy_ids, decoder_input_ids, decoder_position_ids, decoder_turn_ids, decoder_role_ids, decoder_labels, decoder_cls_positions, decoder_cls_labels, decoder_strategy_ids = batch
-            #inputs, labels = (batch, batch)
-            #print(input_ids, decoder_input_ids)
             model.train()
             if input_ids.shape[1] > 1024: continue
             input_ids = input_ids.to(args.device)
-            #position_ids = position_ids.to(args.device)
             turn_ids = turn_ids.to(args.device)
-            #label_ids = label_ids.to(args.device)
             role_ids = role_ids.to(args.device)
-            #cls_positions = cls_positions.to(args.device)
-            #cls_labels = cls_labels.to(args.device)
-            #strategy_ids = strategy_ids.to(args.device)
             decoder_input_ids = decoder_input_ids.to(args.device)
-            #decoder_position_ids = decoder_position_ids.to(args.device)
             decoder_turn_ids = decoder_turn_ids.to(args.device)
             decoder_label_ids = decoder_labels.to(args.device)
             decoder_role_ids = decoder_role_ids.to(args.device)
-            #decoder_cls_positions = decoder_cls_positions.to(args.device)
             #decoder_cls_labels = decoder_cls_labels.to(args.device)
-            #decoder_strategy_ids = decoder_strategy_ids.to(args.device)
             model.train()
+            # we did't use role label and turn number in modeling as they did't carry significant improvement. Codes still remain.
             if not args.role:
                 role_ids = None
             if not args.turn:
@@ -643,7 +567,7 @@ def train(args, train_dataset, model: PreTrainedModel, tokenizer: PreTrainedToke
             if not args.strategy:
                 outputs = model(input_ids, attention_mask = input_ids.ne(tokenizer.pad_token_id), decoder_input_ids=decoder_input_ids, decoder_turn_ids=decoder_turn_ids, decoder_role_ids=decoder_role_ids, turn_ids=turn_ids, role_ids=role_ids,labels = decoder_label_ids)
                 ppl = loss = outputs[0]  # model outputs are always tuple in transformers (see doc)                
-            if  args.strategy:
+            else:
                 outputs = model(input_ids, attention_mask = input_ids.ne(tokenizer.pad_token_id), decoder_input_ids=decoder_input_ids, decoder_turn_ids=decoder_turn_ids, decoder_role_ids=decoder_role_ids, turn_ids=turn_ids, role_ids=role_ids,labels = decoder_label_ids)
                 loss = ppl = outputs.loss
             if not args.no_cuda and args.n_gpu >= 1:
@@ -745,10 +669,9 @@ def evaluate(args, model: PreTrainedModel, tokenizer: PreTrainedTokenizer, eval_
             raise ImportError("Please install apex from https://www.github.com/nvidia/apex to use fp16 training.")
         model = amp.initialize(model, opt_level=args.fp16_opt_level)
 
-     #multi-gpu evaluate
+    #multi-gpu evaluate
     #if args.n_gpu > 1:
     #    model = torch.nn.DataParallel(model)
-    from sklearn.metrics import top_k_accuracy_score, f1_score, accuracy_score
     # Eval!
     logger.info("***** Running evaluation {} *****".format(prefix))
     logger.info("  Num examples = %d", len(eval_dataset))
@@ -762,25 +685,16 @@ def evaluate(args, model: PreTrainedModel, tokenizer: PreTrainedTokenizer, eval_
     num_samples = []
     for batch in tqdm(eval_dataloader, desc="Evaluating",disable=True):
         input_ids, position_ids, turn_ids, role_ids, labels, cls_positions, cls_labels, strategy_ids, decoder_input_ids, decoder_position_ids, decoder_turn_ids, decoder_role_ids, decoder_labels, decoder_cls_positions, decoder_cls_labels, decoder_strategy_ids = batch
-        #inputs, labels = (batch, batch)
         model.train()
         if input_ids.shape[1] > 1024: continue
         input_ids = input_ids.to(args.device)
-        #position_ids = position_ids.to(args.device)
         turn_ids = turn_ids.to(args.device)
-        #label_ids = label_ids.to(args.device)
         role_ids = role_ids.to(args.device)
-        #cls_positions = cls_positions.to(args.device)
-        #cls_labels = cls_labels.to(args.device)
-        #strategy_ids = strategy_ids.to(args.device)
         decoder_input_ids = decoder_input_ids.to(args.device)
-        #decoder_position_ids = decoder_position_ids.to(args.device)
         decoder_turn_ids = decoder_turn_ids.to(args.device)
         decoder_label_ids = decoder_labels.to(args.device)
         decoder_role_ids = decoder_role_ids.to(args.device)
-        #decoder_cls_positions = decoder_cls_positions.to(args.device)
         decoder_cls_labels = decoder_cls_labels.to(args.device)
-        #decoder_strategy_ids = decoder_strategy_ids.to(args.device)
 
         with torch.no_grad():
             if not args.role:
@@ -789,7 +703,6 @@ def evaluate(args, model: PreTrainedModel, tokenizer: PreTrainedTokenizer, eval_
                 turn_ids = None
             if args.strategy:
                 outputs = model(input_ids, decoder_input_ids=decoder_input_ids, decoder_turn_ids=decoder_turn_ids, decoder_role_ids=decoder_role_ids, turn_ids=turn_ids, role_ids=role_ids, labels=decoder_label_ids)
-                #loss = 1*outputs[0] + outputs[1]  # model outputs are always tuple in transformers (see doc)
                 loss = ppl = outputs.loss
             else:
                 outputs = model(input_ids, decoder_input_ids=decoder_input_ids, decoder_turn_ids=decoder_turn_ids, decoder_role_ids=decoder_role_ids, turn_ids=turn_ids, role_ids=role_ids, labels=decoder_label_ids)
@@ -805,17 +718,7 @@ def evaluate(args, model: PreTrainedModel, tokenizer: PreTrainedTokenizer, eval_
     perplexity = torch.exp(torch.tensor(eval_loss))
     np_strategy = np.array(strategy_probs)
     np_cls_labels = np.array(cls_labels_list)
-    print(np_cls_labels)
     result = {"perplexity": perplexity}
-    if  args.strategy:
-        print("strategy prob mean:",np_strategy.mean(axis=0))
-        #print(np_strategy,np_cls_labels)
-        print("len of example:",len(np_strategy), len(np.array(cls_labels_list)))
-        assert len(np.array(cls_labels_list)) == len(np_strategy)
-        #print("hit@1：", top_k_accuracy_score(np_cls_labels, np_strategy,k=1))
-        #print("hit@3：", top_k_accuracy_score(np_cls_labels, np_strategy,k=3))
-        #print("f1 score_macro:",f1_score(np_cls_labels, np.argmax(np_strategy,axis=-1),average="macro"))
-        #print("f1 score_all:",f1_score(np_cls_labels, np.argmax(np_strategy,axis=-1),average=None))
     output_eval_file = os.path.join(eval_output_dir, "eval_results.txt")
     with open(output_eval_file, "a+") as writer:
         logger.info("***** Eval results {} *****".format(prefix))
@@ -884,12 +787,6 @@ def main():
     tokenizer = BlenderbotSmallTokenizer.from_pretrained(args.tokenizer_name, cache_dir=args.cache_dir)
     tokenizer.add_tokens(additional_special_tokens)
     tokenizer.add_special_tokens({'cls_token': '[CLS]'})
-    #model = AutoModelWithLMHead.from_pretrained(
-    #    args.model_name_or_path,
-    #    from_tf=False,
-    #    config=config,
-    #    cache_dir=args.cache_dir,
-    #) 
     model = BlenderbotSmallForConditionalGeneration.from_pretrained(
         args.model_name_or_path,
         from_tf=False,
@@ -931,7 +828,6 @@ def main():
         torch.save(args, os.path.join(args.output_dir, "training_args.bin"))
 
         # Load a trained model and vocabulary that you have fine-tuned
-        #model = AutoModelWithLMHead.from_pretrained(args.output_dir)
         model = BlenderbotSmallForConditionalGeneration.from_pretrained(        
             args.output_dir,
             from_tf=False,
@@ -1005,15 +901,6 @@ def generate():
         paras = {}
         input_ids = torch.tensor([f.input_ids], dtype=torch.long).to(args.device)
         paras["attention_mask"] =  input_ids.ne(tokenizer.pad_token_id)
-       #paras["input_ids"] = torch.tensor([f.input_ids], dtype=torch.long).to(args.device)
-        #print(torch.tensor([f.input_ids], dtype=torch.long)) 
-        #paras["position_ids"] = torch.tensor([f.position_ids], dtype=torch.long).to(args.device)
-        #paras["turn_ids"] = torch.tensor([f.token_type_ids], dtype=torch.long).to(args.device)
-        #paras["token_type_ids"] = None
-        #paras["role_ids"] = None
-        #paras["role_ids"] = torch.tensor([f.role_ids], dtype=torch.long).to(args.device)
-        #paras["cls_position"] = torch.tensor([f.cls_position], dtype=torch.long).to(args.device)
-        #paras["strategy_ids"] = torch.tensor([f.decoder_strategy_ids], dtype=torch.long).to(args.device)
         chat_history_ids = model.generate(
             input_ids=input_ids,
             max_length=1024,min_length=5,
@@ -1069,14 +956,6 @@ def generate_and_evaluate():
         paras = {}
         input_ids = torch.tensor([f.input_ids], dtype=torch.long).to(args.device)
         paras["attention_mask"] =  input_ids.ne(tokenizer.pad_token_id)
-        #paras["input_ids"] = torch.tensor([f.input_ids], dtype=torch.long).to(args.device)
-        #paras["position_ids"] = torch.tensor([f.position_ids], dtype=torch.long).to(args.device)
-        #paras["turn_ids"] = torch.tensor([f.token_type_ids], dtype=torch.long).to(args.device)
-        #paras["role_ids"] = torch.tensor([f.role_ids], dtype=torch.long).to(args.device)
-        #paras["strategy_ids"] = torch.tensor([f.strategy_ids], dtype=torch.long).to(args.device)
-        #paras["next_strategy_id"] = torch.tensor(next_strategy_id, dtype=torch.long).to(args.device)
-        #paras["cls_position"] = torch.tensor([f.decoder_cls_position], dtype=torch.long).to(args.device)
-        #print(paras)
         chat_history_ids = model.generate(
             input_ids,
             **paras, max_length=1024,min_length=5,num_beams=1,
