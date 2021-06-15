@@ -13,7 +13,6 @@ Interact with Blender Joint Model:
 
 1. Change the parameters
 
- 
     class Args():
     def __init__(self):    
         self.output_dir = './blender_strategy/checkpoint-2130'
@@ -55,7 +54,7 @@ Interact with Blender Joint Model:
         self.fp16_opt_level = 'O1'
         self.strategy = True
         self.turn = False
-        self.role = False   
+        self.role = False.   
 2. run:
 `python BlenderEmotionalSupport.py `
    
