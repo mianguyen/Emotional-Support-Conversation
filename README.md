@@ -71,7 +71,7 @@ Please use Transformer from our repo. Because we adapted Transformer to our Task
    
 # Train\Eval\Generate
 
-We integrate codes for training, evaluating, generating, interacting in ONE file. SO JUST CHANGE THE PARAMETERS!
+We integrate codes for training, evaluating, generating, interacting in ONE file. So ** just change the parameters ** for training, evaluating...
 
 <details>
 <summary>parameters for training (click to show code)</summary>
