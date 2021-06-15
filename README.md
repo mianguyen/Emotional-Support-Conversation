@@ -121,11 +121,11 @@ We integrate codes for training, evaluating, generating, interacting in ONE file
 
 1. Sorry. We wrongly adopted sentence-level ppl (perplexity) to calculate the ppl of generateion result on test set, which should have been corpus-level. Commonly the result of sentence-level ppl is lower than corpus-level. Hense, here we update the new ppl result:
 
-Blenderbot Joint/Oracle : 18.61 (originally 16.03)
+    Blenderbot Joint/Oracle : 18.61 (originally 16.03)
 
-DialoGPT Joint/Oracle : 19.09 (originally 15.19)
+    DialoGPT Joint/Oracle : 19.09 (originally 15.19)
 
-2. In original blenderbot implementation, we forgot to set attention mask for padding tokens. Though, the generation result changes little, here we keep original results.
+2. In original blenderbot implementation, we forgot to set attention mask for padding tokens. The generation result changes little thougn. Hense, here we keep original results.
 
 The above two bugs have been fixed in current version of code.
 
