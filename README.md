@@ -172,6 +172,7 @@ We integrate codes for training, evaluating, generating, interacting in ONE file
         self.turn = False
         self.role = False
 ```
+ 
 <\details>
  
 * generating on test set
