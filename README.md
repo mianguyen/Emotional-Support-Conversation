@@ -223,6 +223,8 @@ We integrate codes for training, evaluating, generating, interacting in ONE file
 ``` 
  </details>
 
+run:
+`python BlenderEmotionalSupport.py `
 
 # Bugs in original implementation
 
