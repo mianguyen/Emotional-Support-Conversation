@@ -17,6 +17,7 @@ Parameter:
 
 ` 
 class Args():
+
     def __init__(self):    
         self.output_dir = './blender_strategy/checkpoint-2130'
         self.model_name_or_path = './blender-small'        
