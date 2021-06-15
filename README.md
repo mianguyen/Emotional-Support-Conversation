@@ -73,9 +73,8 @@ Please use Transformer from our repo. Because we adapted Transformer to our Task
 
 We integrate codes for training, evaluating, generating, interacting in ONE file. SO JUST CHANGE THE PARAMETERS!
 
-* train
 <details>
-<summary>show code</summary>
+<summary>parameters for training (click to show code)</summary>
  
  ```python
  class Args():
@@ -124,9 +123,9 @@ We integrate codes for training, evaluating, generating, interacting in ONE file
  
 </details>
 
-* eval\test
+
 <details>
-<summary>show code</summary>
+<summary>parameters for evaluating (click to show code)</summary>
  ```python
  class Args():
     def __init__(self):    
@@ -173,10 +172,9 @@ We integrate codes for training, evaluating, generating, interacting in ONE file
 ``` 
 </details>
  
-* generating on test set
  
 <details>
-<summary>show code</summary>
+<summary>parameters for generating (click to show code)</summary>
  ```python
  class Args():
     def __init__(self):    
