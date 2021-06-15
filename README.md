@@ -20,6 +20,7 @@ Please use Transformer from our repo. Because we adapted Transformer to our Task
 
 # Interact with Blender Joint Model
 
+
 1. Change the parameters
  ```python
  class Args():
@@ -74,6 +75,8 @@ We integrate codes for training, evaluating, generating, interacting in ONE file
 
 * train
 <details>
+<summary>点击时的区域标题</summary>
+ 
  ```python
  class Args():
     def __init__(self):    
