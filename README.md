@@ -9,7 +9,7 @@ Data and codes for ACL 2021 paper: Towards Emotional Support Dialog Systems
 
 
 
-Interact with Blender Joint Model:
+# Interact with Blender Joint Model
 
 1. Change the parameters
  ```python
@@ -59,3 +59,5 @@ Interact with Blender Joint Model:
 2. run:
 `python BlenderEmotionalSupport.py `
    
+# Train\Eval\Test\
+
