@@ -12,8 +12,8 @@ Data and codes for ACL 2021 paper: Towards Emotional Support Dialog Systems
 Interact with Blender Joint Model:
 
 1. Change the parameters
-
-    class Args():
+ ```python
+ class Args():
     def __init__(self):    
         self.output_dir = './blender_strategy/checkpoint-2130'
         self.model_type = 'mymodel'
@@ -54,7 +54,8 @@ Interact with Blender Joint Model:
         self.fp16_opt_level = 'O1'
         self.strategy = True
         self.turn = False
-        self.role = False.   
+        self.role = False
+```
 2. run:
 `python BlenderEmotionalSupport.py `
    
