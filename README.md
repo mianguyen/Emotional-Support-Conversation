@@ -119,7 +119,7 @@ We integrate codes for training, evaluating, generating, interacting in ONE file
 
 # Bugs in original implementation
 
-1. Sorry. We wrongly adopted sentence-level ppl (perplexity) to calculate the ppl of generateion result on test set, which should have been corpus-level. Commonly the result of sentence-level ppl is lower than corpus-level. Hense, here we update the new ppl result:
+1. We wrongly adopted sentence-level ppl (perplexity) to calculate the ppl of generateion result on test set, which should have been corpus-level. Commonly the result of sentence-level ppl is lower than corpus-level. Hense, here we update the new ppl result:
 
     Blenderbot Joint/Oracle : 18.61 (originally 16.03)
 
