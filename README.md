@@ -9,6 +9,11 @@ Data and codes for ACL 2021 paper: Towards Emotional Support Dialog Systems
 
 
 
+# Environment
+
+Please use Transformer from our repo. Because we adapted Transformer to our Task, the main files we changed are:
+* transformer/generation_utils.py
+* transformer/models/blenderbot_small
 
 
 
