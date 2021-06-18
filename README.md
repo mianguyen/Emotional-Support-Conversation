@@ -6,7 +6,7 @@ Data and codes for ACL 2021 paper: Towards Emotional Support Dialog Systems
 - (2021-04) We have collected more conversations with more topics. ESConv now contians 1,410 conversations with 10 topic problems.
 - (2021-06) Fix bugs of the implementation in orginal paper and update new results.
 
-- (2021-06) @chujiezheng has integrated the model implementations in his [repo](https://github.com/chujiezheng/UniModel), where he provides a finer tuning and hyper-parameter settings.
+- (2021-06) [@chujiezheng](https://github.com/chujiezheng) has integrated the model implementations in his [repo](https://github.com/chujiezheng/UniModel), where he provides a finer tuning and hyper-parameter settings.
 
 
 
