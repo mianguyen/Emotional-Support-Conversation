@@ -3,9 +3,10 @@ Data and codes for ACL 2021 paper: Towards Emotional Support Dialog Systems
 
 
 ## News
-- (2021-04) Collect more conversations with more topics. ESConv now contians 1410 conversations with 10 topic problems.
+- (2021-04) We have collected more conversations with more topics. ESConv now contians 1,410 conversations with 10 topic problems.
 - (2021-06) Fix bugs of the implementation in orginal paper and update new results.
 
+- (2021-06) @chujiezheng has integrated the model implementations in his [repo](https://github.com/chujiezheng/UniModel), where he provides a finer tuning and hyper-parameter settings.
 
 
 
@@ -73,17 +74,16 @@ Dependencies:
         self.strategy = True
         self.turn = False
         self.role = False
-```
+ ```
 2. run:
 `python BlenderEmotionalSupport.py `
-   
 # Train\Eval\Generate
 
 We integrate codes for training, evaluating, generating, interacting in ONE file. So **just change the parameters** for training, evaluating...
 
 <details>
 <summary>parameters for training (click to show code)</summary>
- 
+
  ```python
  class Args():
     def __init__(self):    
@@ -127,14 +127,14 @@ We integrate codes for training, evaluating, generating, interacting in ONE file
         self.strategy = True
         self.turn = False
         self.role = False
-```
- 
+ ```
+
 </details>
 
 
 <details>
 <summary>parameters for evaluating (click to show code)</summary>
- 
+
  ```python
  class Args():
     def __init__(self):    
@@ -178,13 +178,13 @@ We integrate codes for training, evaluating, generating, interacting in ONE file
         self.strategy = True
         self.turn = False
         self.role = False
-``` 
+ ```
 </details>
- 
- 
+
+
 <details>
 <summary>parameters for generating (click to show code)</summary>
- 
+
  ```python
  class Args():
     def __init__(self):    
@@ -228,7 +228,7 @@ We integrate codes for training, evaluating, generating, interacting in ONE file
         self.strategy = True
         self.turn = False
         self.role = False
-``` 
+ ```
  </details>
 
 run:
