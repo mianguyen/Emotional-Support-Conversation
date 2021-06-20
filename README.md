@@ -5,7 +5,7 @@ Data and codes for the ACL 2021 paper: [**Towards Emotional Support Dialog Syste
 
 We have collected **more** conversations with more topics. ESConv now contians 1,410 conversations with 10 topic problems.
 
-
+You can run `python process.py` to process the data, and the processed results will be fed into the latter experiments.
 
 ## Model Implementation
 
