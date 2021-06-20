@@ -15,33 +15,37 @@ def _norm(x):
 strategies = json.load(open('./strategy.json'))
 strategies = [e[1:-1] for e in strategies]
 strat2id = {strat: i for i, strat in enumerate(strategies)}
-original = json.load(open('./corpus.json'))
+original = json.load(open('./ESConv.json'))
 
 def process_data(d):
-    emotion = d['emotion']
-    situation = d['complaint']
+    emotion = d['emotion_type']
+    problem = d["problem_type"]
+    situation = d['situation']
+    #init_intensity = int(d['score']['speaker']['begin_intensity'])
+    #final_intensity = int(d['score']['speaker']['end_intensity'])
 
-    d = d['contents']
+    d = d['dialog']
     dial = []
     for uttr in d:
         text = _norm(uttr['content'])
-        role = uttr['role']
-        if role == 'speaker':
+        role = uttr['speaker']
+        if role == 'seeker':
             dial.append({
                 'text': text,
                 'speaker': 'usr',
-                'segment_id': 0,
             })
         else:
             dial.append({
                 'text': text,
                 'speaker': 'sys',
-                'segment_id': 1,
-                'strategy': strat2id[uttr['payload']['method']],
+                'strategy': strat2id[uttr['annotation']['strategy']],
             })
     res = {
-        'emotion': emotion,
+        'emotion_type': emotion,
+        'problem_type': problem,
         'situation': situation,
+        #'init_intensity': init_intensity,
+        #'final_intensity': final_intensity,
         'dialog': dial,
     }
     return res
@@ -51,6 +55,12 @@ data = []
 with mp.Pool(processes=mp.cpu_count()) as pool:
     for e in pool.imap(process_data, tqdm.tqdm(original, total=len(original))):
         data.append(e)
+
+emotions = Counter([e['emotion_type'] for e in data])
+problems = Counter([e['problem_type'] for e in data])
+print('emotion', emotions)
+print('problem', problems)
+
 
 random.shuffle(data)
 dev_size = int(0.15 * len(data))
