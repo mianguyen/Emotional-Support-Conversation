@@ -37,3 +37,7 @@ Run `bash RUN/esc/train_vanilla.sh` to train your model.
 Every time of model training will create a new folder in `DATA/esc/{inputter_name}.{config_name}`, which is named after the time when the training starts. You should select a checkpoint (it may be based on the PPL of validation), and replace the checkpoint path in `RUN/esc/infer_vanilla.sh --load_checkpoint` with the path of your selected checkpoint.
 
 Then, run `bash RUN/esc/infer_vanilla.sh` to do the inference.
+
+## Interacting with Your Model
+
+Similar to inference, after designating the checkpoint in `RUN/esc/interact_vanilla.sh --load_checkpoint`, run `bash RUN/esc/interact_vanilla.sh`.
