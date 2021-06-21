@@ -1,0 +1,20 @@
+CUDA_VISIBLE_DEVICES=2 python infer.py \
+    --data_name esc \
+    --config_name strat \
+    --inputter_name esc_strat \
+    --add_nlg_eval \
+    --seed 3 \
+    --load_checkpoint /home/zhengchujie/UniModel/DATA/esc/esc_strat.strat/2021-05-30091355.3e-05.16.1gpu/epoch-2.pkl \
+    --fp16 false \
+    --max_src_len 150 \
+    --max_tgt_len 50 \
+    --max_length 50 \
+    --min_length 10 \
+    --infer_batch_size 2 \
+    --infer_input_file ./_reformat/test.txt \
+    --temperature 0.7 \
+    --top_k 0 \
+    --top_p 0.9 \
+    --num_beams 1 \
+    --repetition_penalty 1.03 \
+    --no_repeat_ngram_size 3

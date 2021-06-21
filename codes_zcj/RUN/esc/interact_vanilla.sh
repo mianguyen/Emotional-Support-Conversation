@@ -1,0 +1,17 @@
+CUDA_VISIBLE_DEVICES=7 python interact_esc.py \
+    --data_name esc \
+    --config_name vanilla \
+    --inputter_name esc_vanilla \
+    --seed 4 \
+    --load_checkpoint /home/zhengchujie/UniModel/DATA/esc/esc_vanilla.vanilla/2021-05-24215118.3e-05.16.1gpu/epoch-2.pkl \
+    --fp16 false \
+    --max_src_len 150 \
+    --max_tgt_len 50 \
+    --max_length 50 \
+    --min_length 10 \
+    --temperature 0.7 \
+    --top_k 0 \
+    --top_p 0.9 \
+    --num_beams 1 \
+    --repetition_penalty 1.03 \
+    --no_repeat_ngram_size 3
