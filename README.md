@@ -1,8 +1,6 @@
 # Emotional-Support-Conversation
 Data and codes for the ACL 2021 paper: [**Towards Emotional Support Dialog Systems**](https://arxiv.org/abs/2106.01144)
 
-If you have any problem or suggestion, feel free to contact me: chujiezhengchn@gmail.com
-
 If you use our codes or your research is related to our paper, please kindly cite our paper:
 
 ```bib
