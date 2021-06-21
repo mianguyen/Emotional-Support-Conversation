@@ -23,15 +23,14 @@ If you use our codes or your research is related to our paper, please kindly cit
 
 ## Data
 
-We have collected **more** conversations with more topics. ESConv now contians 1,410 conversations with 10 topic problems.
-
-You can run `python process.py` to process the data, and the processed results will be fed into the latter experiments.
+The corpus file is `ESConv.json`. We have collected **more** conversations with more topics. ESConv now contians 1,410 conversations with 10 topic problems.
 
 ## Model Implementation
 
-The model implementation is integrated by  [@chujiezheng](https://github.com/chujiezheng) in the repo [chujiezheng/UniModel (github.com)](https://github.com/chujiezheng/UniModel).
+We provide two versions of model implementation:
 
-## Bug
+- `codes` is the version that we used in the original experiments
+- `codes_zcj` is the version reproduced by  [@chujiezheng](https://github.com/chujiezheng) based on the repo [chujiezheng/UniModel (github.com)](https://github.com/chujiezheng/UniModel)
 
-If you reproduce our experiments, you may find that the calculated ppl is a bit higher than the results reported in our paper. That is because we mistook the average of ppl of utterances as the final result, which should instead be calculated by averaging the tokens in all the test corpus.
+
 
