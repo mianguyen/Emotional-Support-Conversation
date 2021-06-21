@@ -27,7 +27,12 @@ conda activate UniModel
 
 ## Downloading Model
 
-You should download the [BlenderBot-small](https://huggingface.co/facebook/blenderbot_small-90M) model and replace the fake `pytorch_model.bin` file in `Blenderbot_small-90M` with the true one.
+You should first download the [BlenderBot-small](https://huggingface.co/facebook/blenderbot_small-90M) model and replace the fake `pytorch_model.bin` file in `Blenderbot_small-90M` with the true one.
+
+## About Postfix
+
+- `_vanilla` denotes the variant directly fine-tuned on ESConv without using strategies
+- `_strat` denotes the one that additionally uses the strategy information and supervision
 
 ## Preprocessing Training Data
 
@@ -44,6 +49,8 @@ Run `bash RUN/esc/train_vanilla.sh` to train your model.
 Every time of model training will create a new folder in `DATA/esc/{inputter_name}.{config_name}`, which is named after the time when the training starts. You should select a checkpoint (it may be based on the PPL of validation), and replace the checkpoint path in `RUN/esc/infer_vanilla.sh --load_checkpoint` with the path of your selected checkpoint.
 
 Then, run `bash RUN/esc/infer_vanilla.sh` to do the inference.
+
+**Note**: When you run `infer_strat.sh`, you can change `GOLDEN_TRUTH` in  `inputter/esc/PARAMS.py` to control whether use the golden strategy during inference.
 
 ## Interacting with Your Model
 
