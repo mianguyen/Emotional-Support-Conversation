@@ -18,6 +18,13 @@ Siyang Liu*, **Chujie Zheng***, Orianna Demasi, Sahand Sabour, Yu Li, Zhou Yu, Y
 }
 ```
 
+## Preparing Enviroment
+
+```bash
+conda env create -f env.yml -n UniModel
+conda activate UniModel
+```
+
 ## Downloading Model
 
 You should download the [BlenderBot-small](https://huggingface.co/facebook/blenderbot_small-90M) model and replace the fake `pytorch_model.bin` file in `Blenderbot_small-90M` with the true one.
