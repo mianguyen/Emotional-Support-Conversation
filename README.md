@@ -28,7 +28,7 @@ The corpus file is `ESConv.json`. We have collected **more** conversations with 
 We provide two versions of model implementation:
 
 - `codes` is the version that we used in the original experiments
-- `codes_zcj` is the version reproduced by  [@chujiezheng](https://github.com/chujiezheng) based on the repo [chujiezheng/UniModel (github.com)](https://github.com/chujiezheng/UniModel)
+- `codes_zcj` is the version reproduced by  [@chujiezheng](https://github.com/chujiezheng)
 
 
 
