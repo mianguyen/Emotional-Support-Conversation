@@ -18,7 +18,7 @@ Dependencies:
 
 
 # Dataset
-Old Dataset (1053 conversations) is in dataset file. We have split them into train/eval/test set.
+The old dataset (1053 conversations) is in 'dataset' directory. We have split them into train/eval/test set.
 
 
 # Interact with Blender Joint Model
