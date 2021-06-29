@@ -11,10 +11,13 @@ Dependencies:
 | torch | 1.7.1 |
 | python | 3.7 |
 
+
+
 **Please use transformers from our repo, because we adapted transformers to our generation task. The main files we changed are:**
 * transformer/generation_utils.py
-* transformer/generation_logits_process.py
-* transformer/models/blenderbot_small
+* transformer/models/blenderbot_small  
+
+PS: No major difference in modeling and small difference in generation_utils.py between ours and huggingface's transformer. Chujie's code is recommanded due to its much clearness. I put this code for two resons: 1) base the code on huggingface 2) show the process of my experiments, including those trials that don't work, which can help followers to avoid doing them again. I have tried: information of turn, role; strategy embedding; extra classification head for strategy predicting. They carry no or small improvement.
 
 
 # Dataset
