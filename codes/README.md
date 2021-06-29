@@ -17,7 +17,7 @@ Dependencies:
 * transformer/generation_utils.py
 * transformer/models/blenderbot_small  
 
-PS: No major difference in modeling and small difference in generation_utils.py between ours and huggingface's transformer. Chujie's code is recommanded due to its much clearness. I put this code for two resons: 1) base the code on huggingface 2) show the process of my experiments, including those trials that don't work, which can help followers to avoid doing them again. I have tried: information of turn, role; strategy embedding; extra classification head for strategy predicting. They carry no or small improvement.
+PS: No major difference in modeling and small difference in generation_utils.py between ours and huggingface's transformer. Chujie's code is recommanded due to its much clearness. I put this code for two resons: 1) base the code on huggingface 2) show the process of my experiments, including those trials that didn't work, which can help followers to avoid doing them again. I have tried: information of turn, role; strategy embedding; extra classification head for strategy predicting. They carry no or small improvement.
 
 
 # Dataset
