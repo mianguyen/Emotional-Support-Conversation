@@ -23,6 +23,12 @@ PS: No major difference in modeling and small difference in generation_utils.py 
 # Dataset
 The old dataset (1053 conversations) is in 'dataset' directory. We have split them into train/eval/test set.
 
+# Models
+[Blender model with ESC strategy](https://huggingface.co/lsy641/ESC_Blender_Strategy)
+
+[Blender model without ESC strategy](https://huggingface.co/lsy641/ESC_Blender_noStrategy)
+
+[Blender model 90M](https://huggingface.co/facebook/blenderbot_small-90M)
 
 # Interact with Blender Joint Model
 
