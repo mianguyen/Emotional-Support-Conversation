@@ -186,7 +186,7 @@ We integrate codes for training, evaluating, generating, interacting in ONE file
  ```python
  class Args():
     def __init__(self):    
-        self.output_dir = './blender_strategy/checkpint-2130'
+        self.output_dir = './blender_strategy/checkpoint-2130'
         self.model_type = 'mymodel'
         self.model_name_or_path = './blender-small'        
         self.config_name = './blender-small'        
