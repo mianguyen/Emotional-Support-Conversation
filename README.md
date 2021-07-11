@@ -31,7 +31,7 @@ The corpus file is `ESConv.json`. We have collected **more** conversations with 
 | Number| 386 |260 | 317 | 191 | 172 |  13 | 12 | 18 | 28 | 12 | 2 | 10 |
 
 
-\* denotes the new topics that we add for the second collection. The new data is aimed to support the research in transferring the model's ability from old topics to the new ones. 
+\* denotes the new topics that we add during the second collection. We hope new data supports future research in transferring the ability of models from old topics to the new ones. 
 
 <font size=1>
   
