@@ -21,7 +21,34 @@ If you use our codes or your research is related to our paper, please kindly cit
 
 ## Data
 
-The corpus file is `ESConv.json`. We have collected **more** conversations with more topics. ESConv now contians 1,410 conversations with 10 topic problems.
+The corpus file is `ESConv.json`. We have collected **more** conversations with more problem topics. ESConv now contians 1,410 conversations with 10 topic problems.
+
+### Statistics
+#### Problem Category
+
+| Problem Category | ongoing depression | breakup with partner | job crisis | problems with friends | academic pressure | procras-<br>tination* | alcohol abuse* | issues with parent* | sleep problems* |  appearance anxiety* | school bullying* | issues with children* |
+| :-------- | :---------- | :---------- |  :---------- |  :---------- |  :---------- |  :---------- |  :---------- |  :---------- |  :---------- |  :---------- | :---------- | :---------- | 
+| Number| 386 |260 | 317 | 191 | 172 |  13 | 12 | 18 | 28 | 12 | 2 | 10 |
+
+
+\* denotes the new topics that we add for the second collection. The new data is aimed to support the research in transferring the model's ability from old topics to the new ones. 
+
+<font size=1>
+  
+#### Strategy Category 
+| Strategy Category| Number   |
+| :--------------  | :------- |
+| Questions | 4138(20.7%)|
+| Self-disclosure | 1836(9.1%) |
+| Affirmation and Reassurance | 3058(15.3%) |
+| Providing Suggestions | 3237(16.2%) |
+| Other | 3661(18.3%) |
+| Reflection of feelings | 1580(7.9%) | 
+| Information | 1316(6.6%) | 
+| Restatement or Paraphrasing | 1184(5.9%) |
+  
+</font>
+
 
 ## Model Implementation
 
