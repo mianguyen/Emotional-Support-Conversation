@@ -173,7 +173,7 @@ while True:
         'text': text,
         'speaker': 'sys',
     })
-    if 'pred_strat_ids' in encoded_info:
+    if 'pred_strat_id' in encoded_info:
         history['dialog'][-1]['strategy'] = encoded_info['pred_strat_id'].cpu().tolist()[0]
 
     
