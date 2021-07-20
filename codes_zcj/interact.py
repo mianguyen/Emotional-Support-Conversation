@@ -12,7 +12,6 @@ import random
 
 from utils.training_utils import boolean_string, set_seed
 from utils.building_utils import build_model, deploy_model
-from utils.cuda_utils import occupy_mem
 from inputter import inputters
 from inputter.inputter_utils import _norm
 

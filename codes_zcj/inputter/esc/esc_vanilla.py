@@ -241,7 +241,7 @@ class DynamicBatchingLoader(object):
 
 
 # for inference
-def prepare_infer_batch(features, toker):
+def prepare_infer_batch(features, toker, interact=None):
     res = FeatureDataset.collate(features, toker)
     
     res['tgt_input_ids'] = res.pop('tgt_input_ids')[:, :1]
