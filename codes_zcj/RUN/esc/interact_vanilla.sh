@@ -1,4 +1,4 @@
-CUDA_VISIBLE_DEVICES=7 python interact_esc.py \
+CUDA_VISIBLE_DEVICES=7 python interact.py \
     --data_name esc \
     --config_name vanilla \
     --inputter_name esc_vanilla \
