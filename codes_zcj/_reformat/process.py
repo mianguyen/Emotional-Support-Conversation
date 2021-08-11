@@ -38,7 +38,7 @@ def process_data(d):
             dial.append({
                 'text': text,
                 'speaker': 'sys',
-                'strategy': strat2id[uttr['annotation']['strategy']],
+                'strategy': uttr['annotation']['strategy'],
             })
     res = {
         'emotion_type': emotion,
