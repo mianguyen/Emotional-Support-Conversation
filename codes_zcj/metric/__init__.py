@@ -16,7 +16,7 @@ def _strip(s):
     return s.strip()
 
 
-def compute_metrics(hypothesis, references, no_overlap=False, no_skipthoughts=False, no_glove=False):
+def compute_metrics(hypothesis, references, no_overlap=False, no_glove=False):
     with open(hypothesis, 'r') as f:
         hyp_list = f.readlines()
     ref_list = []
@@ -49,22 +49,6 @@ def compute_metrics(hypothesis, references, no_overlap=False, no_skipthoughts=Fa
                 scorer.close()
         del scorers
 
-    if not no_skipthoughts:
-        from metric.skipthoughts import skipthoughts
-        import numpy as np
-        from sklearn.metrics.pairwise import cosine_similarity
-
-        model = skipthoughts.load_model()
-        encoder = skipthoughts.Encoder(model)
-        vector_hyps = encoder.encode([h.strip() for h in hyp_list], verbose=False)
-        ref_list_T = np.array(ref_list).T.tolist()
-        vector_refs = map(lambda refl: encoder.encode([r.strip() for r in refl], verbose=False), ref_list_T)
-        cosine_similarity = list(map(lambda refv: cosine_similarity(refv, vector_hyps).diagonal(), vector_refs))
-        cosine_similarity = np.max(cosine_similarity, axis=0).mean()
-        print("SkipThoughtsCosineSimilarity: %0.6f" % (cosine_similarity))
-        ret_scores['SkipThoughtCS'] = cosine_similarity
-        del model
-
     if not no_glove:
         from metric.word2vec.evaluate import eval_emb_metrics
         import numpy as np
@@ -83,7 +67,7 @@ def compute_metrics(hypothesis, references, no_overlap=False, no_skipthoughts=Fa
     return ret_scores
 
 
-def compute_individual_metrics(ref, hyp, no_overlap=False, no_skipthoughts=False, no_glove=False):
+def compute_individual_metrics(ref, hyp, no_overlap=False, no_glove=False):
     assert isinstance(hyp, six.string_types)
 
     if isinstance(ref, six.string_types):
@@ -113,20 +97,6 @@ def compute_individual_metrics(ref, hyp, no_overlap=False, no_skipthoughts=False
             if isinstance(scorer, Meteor):
                 scorer.close()
         del scorers
-
-    if not no_skipthoughts:
-        from metric.skipthoughts import skipthoughts
-        import numpy as np
-        from sklearn.metrics.pairwise import cosine_similarity
-
-        model = skipthoughts.load_model()
-        encoder = skipthoughts.Encoder(model)
-        vector_hyps = encoder.encode([h.strip() for h in hyp_list], verbose=False)
-        ref_list_T = np.array(ref_list).T.tolist()
-        vector_refs = map(lambda refl: encoder.encode([r.strip() for r in refl], verbose=False), ref_list_T)
-        cosine_similarity = list(map(lambda refv: cosine_similarity(refv, vector_hyps).diagonal(), vector_refs))
-        cosine_similarity = np.max(cosine_similarity, axis=0).mean()
-        ret_scores['SkipThoughtCS'] = cosine_similarity
 
     if not no_glove:
         from metric.word2vec.evaluate import eval_emb_metrics
@@ -163,15 +133,12 @@ class NLGEval(object):
                         'SkipThoughtCS',
                     } | glove_metrics
 
-    def __init__(self, no_overlap=False, no_skipthoughts=False, no_glove=False,
+    def __init__(self, no_overlap=False, no_glove=False,
                  metrics_to_omit=None):
         """
         :param no_overlap: Default: Use overlap metrics.
             `True` if these metrics should not be used.
         :type no_overlap: bool
-        :param no_skipthoughts: Default: Use the skip-thoughts metric.
-            `True` if this metrics should not be used.
-        :type no_skipthoughts: bool
         :param no_glove: Default: Use GloVe based metrics.
             `True` if these metrics should not be used.
         :type no_glove: bool
@@ -197,10 +164,6 @@ class NLGEval(object):
         if not no_overlap:
             self.load_scorers()
 
-        self.no_skipthoughts = no_skipthoughts or 'SkipThoughtCS' in self.metrics_to_omit
-        if not self.no_skipthoughts:
-            self.load_skipthought_model()
-
         self.no_glove = no_glove or len(self.glove_metrics - self.metrics_to_omit) == 0
         if not self.no_glove:
             self.load_glove()
@@ -224,17 +187,6 @@ class NLGEval(object):
             self.scorers.append((Rouge(), "ROUGE_L"))
         if 'CIDEr' not in self.metrics_to_omit:
             self.scorers.append((Cider(), "CIDEr"))
-
-
-    def load_skipthought_model(self):
-        from metric.skipthoughts import skipthoughts
-        import numpy as np
-        from sklearn.metrics.pairwise import cosine_similarity
-        self.np = np
-        self.cosine_similarity = cosine_similarity
-
-        model = skipthoughts.load_model()
-        self.skipthought_encoder = skipthoughts.Encoder(model)
 
     def load_glove(self):
         from metric.word2vec.evaluate import Embedding
@@ -262,14 +214,6 @@ class NLGEval(object):
                         ret_scores[m] = sc
                 else:
                     ret_scores[method] = score
-
-        if not self.no_skipthoughts:
-            vector_hyps = self.skipthought_encoder.encode([h.strip() for h in hyp_list], verbose=False)
-            ref_list_T = self.np.array(ref_list).T.tolist()
-            vector_refs = map(lambda refl: self.skipthought_encoder.encode([r.strip() for r in refl], verbose=False), ref_list_T)
-            cosine_similarity = list(map(lambda refv: self.cosine_similarity(refv, vector_hyps).diagonal(), vector_refs))
-            cosine_similarity = self.np.max(cosine_similarity, axis=0).mean()
-            ret_scores['SkipThoughtCS'] = cosine_similarity
 
         if not self.no_glove:
             glove_hyps = [h.strip() for h in hyp_list]
@@ -303,15 +247,6 @@ class NLGEval(object):
                 else:
                     ret_scores[method] = score
                     ret_score_list[method] = [float(each) for each in scores]
-
-        if not self.no_skipthoughts:
-            vector_hyps = self.skipthought_encoder.encode([h.strip() for h in hyp_list], verbose=False)
-            ref_list_T = self.np.array(ref_list).T.tolist()
-            vector_refs = map(lambda refl: self.skipthought_encoder.encode([r.strip() for r in refl], verbose=False), ref_list_T)
-            cosine_similarity = list(map(lambda refv: self.cosine_similarity(refv, vector_hyps).diagonal(), vector_refs))
-            ret_score_list['SkipThoughtCS'] = [float(each) for each in self.np.max(cosine_similarity, axis=0).tolist()]
-            cosine_similarity = self.np.max(cosine_similarity, axis=0).mean()
-            ret_scores['SkipThoughtCS'] = cosine_similarity
 
         if not self.no_glove:
             glove_hyps = [h.strip() for h in hyp_list]

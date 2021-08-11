@@ -41,7 +41,7 @@ def eval_model_loss(model, eval_dataloader, epoch_id, infer, args):
         for step, batch in enumerate(eval_dataloader):
             batch = {k: v.to(args.device) if isinstance(v, Tensor) else v for k, v in batch.items()}
             loss_sample, n_sample, = model(
-                pointwise=True,
+                validation=True,
                 **batch
             )
             if torch.isnan(loss_sample).sum().cpu().long().numpy() > 0:

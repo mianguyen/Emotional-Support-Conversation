@@ -11,18 +11,16 @@ from os.path import dirname, exists, join
 
 import torch
 import tqdm
-from inputter import inputters
+from inputters import inputters
 from utils.building_utils import build_model
 
 parser = argparse.ArgumentParser()
-parser.add_argument('--data_name', type=str, required=True)
 parser.add_argument('--config_name', type=str, required=True)
 parser.add_argument('--inputter_name', type=str, required=True)
-parser.add_argument('--corpus', type=str, required=True)
-parser.add_argument('--max_src_turn', type=int, default=None)
-parser.add_argument('--max_src_len', type=int, default=150, help='discard data longer than this')
-parser.add_argument('--max_tgt_len', type=int, default=None, help='discard data longer than this')
-parser.add_argument('--max_knl_len', type=int, default=None, help='discard data longer than this')
+parser.add_argument('--train_input_file', type=str, required=True)
+parser.add_argument('--max_input_length', type=int, default=150, help='discard data longer than this')
+parser.add_argument('--max_decoder_input_length', type=int, default=None, help='discard data longer than this')
+parser.add_argument('--max_knowledge_length', type=int, default=None, help='discard data longer than this')
 parser.add_argument('--label_num', type=int, default=None)
 parser.add_argument('--only_encode', action='store_true', help='only do encoding')
 parser.add_argument('--single_processing', action='store_true', help='do not use multiprocessing')
@@ -30,7 +28,6 @@ parser.add_argument('--single_processing', action='store_true', help='do not use
 args = parser.parse_args()
 
 names = {
-    'data_name': args.data_name,
     'inputter_name': args.inputter_name,
     'config_name': args.config_name,
 }
@@ -38,20 +35,19 @@ names = {
 inputter = inputters[args.inputter_name]()
 toker = build_model(only_toker=True, **names)
 
-with open(args.corpus) as f:
+with open(args.train_input_file) as f:
     reader = f.readlines()
 
-if not os.path.exists(f'./DATA/{args.data_name}'):
-    os.mkdir(f'./DATA/{args.data_name}')
-save_dir = f'./DATA/{args.data_name}/{args.inputter_name}.{args.config_name}'
+if not os.path.exists(f'./DATA'):
+    os.mkdir(f'./DATA')
+save_dir = f'./DATA/{args.inputter_name}.{args.config_name}'
 if not exists(save_dir):
     os.mkdir(save_dir)
 
 kwargs = {
-    'max_src_turn': args.max_src_turn,
-    'max_src_len': args.max_src_len,
-    'max_tgt_len': args.max_tgt_len,
-    'max_knl_len': args.max_knl_len,
+    'max_input_length': args.max_input_length,
+    'max_decoder_input_length': args.max_decoder_input_length,
+    'max_knowledge_length': args.max_knowledge_length,
     'label_num': args.label_num,
     'only_encode': args.only_encode,
 }

@@ -1,24 +1,22 @@
 # coding=utf-8
 
-import json
-import torch
-import random
-from torch import Tensor
-import numpy as np
-import os
-import nltk
-import logging
 import argparse
+import json
+import logging
+import os
+
+import nltk
+import numpy as np
+import torch
 from sklearn.metrics import classification_report, f1_score, confusion_matrix
+from torch import Tensor
+from transformers.trainer_utils import set_seed
 
-from utils.eval_utils import eval_model_loss
-
-from utils.training_utils import boolean_string, set_seed
-from utils.building_utils import build_model, deploy_model
-from inputter import inputters
-from inputter.inputter_utils import _norm
-
+from inputters import inputters
+from inputters.inputter_utils import _norm
 from metric.myMetrics import Metric
+from utils.building_utils import boolean_string, build_model, deploy_model
+from utils.eval_utils import eval_model_loss
 
 logging.basicConfig(format = '%(asctime)s - %(levelname)s - %(name)s -   %(message)s',
                     datefmt = '%m/%d/%Y %H:%M:%S',
@@ -41,16 +39,16 @@ def cut_seq_to_eos(sentence, eos, remove_id=None):
 
 
 parser = argparse.ArgumentParser()
-parser.add_argument('--data_name', type=str, required=True)
 parser.add_argument('--config_name', type=str, required=True)
 parser.add_argument('--inputter_name', type=str, required=True)
 parser.add_argument("--seed", type=int, default=42)
 parser.add_argument("--load_checkpoint", '-c', type=str, default=None)
+
 parser.add_argument("--fp16", type=boolean_string, default=False)
-parser.add_argument("--max_src_len", type=int, default=150)
+parser.add_argument("--max_input_length", type=int, default=150)
 parser.add_argument("--max_src_turn", type=int, default=None)
-parser.add_argument("--max_tgt_len", type=int, default=50)
-parser.add_argument("--max_knl_len", type=int, default=None)
+parser.add_argument("--max_decoder_input_length", type=int, default=50)
+parser.add_argument("--max_knowledge_length", type=int, default=None)
 parser.add_argument('--label_num', type=int, default=None)
 parser.add_argument('--multi_knl', action='store_true', help='allow candidate knowledge items')
 
@@ -70,6 +68,7 @@ parser.add_argument("--temperature", type=float, default=1)
 parser.add_argument("--top_k", type=int, default=1)
 parser.add_argument("--top_p", type=float, default=1)
 parser.add_argument('--num_beams', type=int, default=1)
+parser.add_argument("--length_penalty", type=float, default=1.0)
 parser.add_argument("--repetition_penalty", type=float, default=1.0)
 parser.add_argument("--no_repeat_ngram_size", type=int, default=0)
 
@@ -92,30 +91,33 @@ for a in args_dict:
     logger.info('%-28s  %s' % (a, args_dict[a]))
 
 names = {
-    'data_name': args.data_name,
     'inputter_name': args.inputter_name,
     'config_name': args.config_name,
 }
 
-toker, model, *_ = build_model(checkpoint=args.load_checkpoint, **names)
+toker, model = build_model(checkpoint=args.load_checkpoint, **names)
 model = deploy_model(model, args)
 
 model_parameters = list(filter(lambda p: p.requires_grad, model.parameters()))
 total_params = sum([np.prod(p.size()) for p in model_parameters])
 logger.info('Number of parameter = {}'.format(total_params))
 
+if args.fp16:
+    from apex import amp
+    model, optimizer = amp.initialize(model, opt_level="O1")
+
 model.eval()
 
 inputter = inputters[args.inputter_name]()
 dataloader_kwargs = {
     'max_src_turn': args.max_src_turn,
-    'max_src_len': args.max_src_len,
-    'max_tgt_len': args.max_tgt_len,
-    'max_knl_len': args.max_knl_len,
+    'max_input_length': args.max_input_length,
+    'max_decoder_input_length': args.max_decoder_input_length,
+    'max_knowledge_length': args.max_knowledge_length,
     'label_num': args.label_num,
     'multi_knl': args.multi_knl,
     'only_encode': args.only_encode,
-    'infer_batch_size': args.infer_batch_size // args.num_beams,
+    'infer_batch_size': args.infer_batch_size,
 }
 
 pad = toker.pad_token_id
@@ -140,15 +142,18 @@ generation_kwargs = {
     'top_p': args.top_p,
     'num_beams': args.num_beams,
     'num_return_sequences': args.num_return_sequences,
+    'length_penalty': args.length_penalty,
     'repetition_penalty': args.repetition_penalty,
     'no_repeat_ngram_size': args.no_repeat_ngram_size,
+    'encoder_no_repeat_ngram_size': args.no_repeat_ngram_size if model.config.is_encoder_decoder else None,
     'pad_token_id': pad,
     'bos_token_id': bos,
     'eos_token_id': eos,
 }
 print(json.dumps(generation_kwargs, indent=2, ensure_ascii=False))
 
-for infer_input_file in args.infer_input_file:
+for infer_idx, infer_input_file in enumerate(args.infer_input_file):
+    set_seed(args.seed)
     infer_dataloader = inputter.infer_dataloader(
         infer_input_file,
         toker,
@@ -180,7 +185,7 @@ for infer_input_file in args.infer_input_file:
     res = []
     other_res = {}
     decode = lambda x: _norm(toker.decode(x))
-    for batch, posts, references, turn_lens in infer_dataloader:
+    for batch, posts, references, sample_ids in infer_dataloader:
         batch = {k: v.to(device) if isinstance(v, Tensor) else v for k, v in batch.items()}
         batch.update(generation_kwargs)
         encoded_info, generations = model.generate(**batch)
@@ -232,67 +237,60 @@ for infer_input_file in args.infer_input_file:
         if not args.only_encode:
             generations = [cut_seq_to_eos(each, eos) for each in generations.tolist()]
             
-        st = 0
-        for l in turn_lens:
-            tmp_res = []
-            for idx in range(st, st+l):
-                p = posts[idx]
-                r = references[idx]
-                if not args.only_encode:
-                    if args.num_return_sequences > 1:
-                        g = []
-                        for gg in generations[idx * args.num_return_sequences: (idx+1) * args.num_return_sequences]:
-                            g.append(gg)
-                    else:
-                        g = generations[idx]
-                        
-                    
-                    if not args.only_generate and args.num_return_sequences == 1:
-                        ref, gen = [r], toker.decode(g) if not isinstance(g[0], list) else toker.decode(g[0])
-                        metric.forword(ref, gen, chinese=args.chinese)
-                    
-                    if isinstance(g[0], list):
-                        g  = [decode(gg) for gg in g]
-                    else:
-                        g = decode(g)
-                    
-                    tmp_res_to_append = {'post': p, 'response': r, 'generation': g}
-                    #print('> context:   ', p)
-                    #print('> generation:', g)
+        for idx in range(len(sample_ids)):
+            p = posts[idx]
+            r = references[idx]
+            if not args.only_encode:
+                if args.num_return_sequences > 1:
+                    g = []
+                    for gg in generations[idx * args.num_return_sequences: (idx+1) * args.num_return_sequences]:
+                        g.append(gg)
                 else:
-                    tmp_res_to_append = {'post': p, 'response': r}
-                #print(json.dumps(tmp_res_to_append, indent=4, ensure_ascii=False))
+                    g = generations[idx]
                 
-                other_res_to_append = {}
-                if batch_other_res is not None:
-                    if add_acc:
-                        for k, v in batch_other_res['acc_map'].items():
-                            if k not in batch_other_res or v not in encoded_info: # TODO
-                                continue # TODO
-                            other_res_to_append[v] = encoded_info[v][idx]
-                            if f'{v}_top1' in encoded_info:
-                                other_res_to_append[f'{v}_top1'] = encoded_info[f'{v}_top1'][idx]
-                            if f'{v}_top3' in encoded_info:
-                                other_res_to_append[f'{v}_top3'] = encoded_info[f'{v}_top3'][idx]
-                            if f'{v}_dist' in encoded_info:
-                                other_res_to_append[f'{v}_dist'] = ' '.join(map(str, encoded_info[f'{v}_dist'][idx]))
-    
-                tmp_res_to_append.update(other_res_to_append)
+                if not args.only_generate and args.num_return_sequences == 1:
+                    ref, gen = [r], toker.decode(g) if not isinstance(g[0], list) else toker.decode(g[0])
+                    metric.forword(ref, gen, chinese=args.chinese)
                 
-                if not args.only_encode and not args.only_generate:
-                    ptr_loss = pointwise_loss[ptr]
-                    ptr_sample = pointwise_sample[ptr]
-                    turn_loss = ptr_loss / ptr_sample
-                    turn_ppl = np.exp(turn_loss)
-                    tmp_res_to_append['token_num'] = ptr_sample
-                    tmp_res_to_append['loss'] = turn_loss
-                    tmp_res_to_append['ppl'] = turn_ppl
-                    ptr += 1
+                if isinstance(g[0], list):
+                    g  = [decode(gg) for gg in g]
+                else:
+                    g = decode(g)
                 
-                tmp_res.append(tmp_res_to_append)
+                tmp_res_to_append = {'sample_id': sample_ids[idx], 'post': p, 'response': r, 'generation': g}
+                #print('> context:   ', p)
+                #print('> generation:', g)
+            else:
+                tmp_res_to_append = {'sample_id': sample_ids[idx], 'post': p, 'response': r}
+            #print(json.dumps(tmp_res_to_append, indent=4, ensure_ascii=False))
+            
+            other_res_to_append = {}
+            if batch_other_res is not None:
+                if add_acc:
+                    for k, v in batch_other_res['acc_map'].items():
+                        if k not in batch_other_res or v not in encoded_info: # TODO
+                            continue # TODO
+                        other_res_to_append[v] = encoded_info[v][idx]
+                        if f'{v}_top1' in encoded_info:
+                            other_res_to_append[f'{v}_top1'] = encoded_info[f'{v}_top1'][idx]
+                        if f'{v}_top3' in encoded_info:
+                            other_res_to_append[f'{v}_top3'] = encoded_info[f'{v}_top3'][idx]
+                        if f'{v}_dist' in encoded_info:
+                            other_res_to_append[f'{v}_dist'] = ' '.join(map(str, encoded_info[f'{v}_dist'][idx]))
+
+            tmp_res_to_append.update(other_res_to_append)
+            
+            if not args.only_encode and not args.only_generate:
+                ptr_loss = pointwise_loss[ptr]
+                ptr_sample = pointwise_sample[ptr]
+                turn_loss = ptr_loss / ptr_sample
+                turn_ppl = np.exp(turn_loss)
+                tmp_res_to_append['token_num'] = ptr_sample
+                tmp_res_to_append['loss'] = turn_loss
+                tmp_res_to_append['ppl'] = turn_ppl
+                ptr += 1
                 
-            res.append(tmp_res)
-            st += l
+            res.append(tmp_res_to_append)
         
         #raise EOFError
         
@@ -305,7 +303,8 @@ for infer_input_file in args.infer_input_file:
     infer_input_file_name = '.'.join(infer_input_file_name.split('.')[:-1])
     if not args.only_encode:
         save_dir = f'{checkpoint_dir_path}/res_{checkpoint_name}_{infer_input_file_name}_k.{args.top_k}' \
-                   f'_p.{args.top_p}_b.{args.num_beams}_t.{args.temperature}_rep.{args.repetition_penalty}_ngm.{args.no_repeat_ngram_size}'
+                   f'_p.{args.top_p}_b.{args.num_beams}_t.{args.temperature}_lp.{args.length_penalty}' \
+                   f'_rp.{args.repetition_penalty}_ng.{args.no_repeat_ngram_size}'
     else:
         save_dir = f'{checkpoint_dir_path}/res_{checkpoint_name}_{infer_input_file_name}'
     if not os.path.exists(save_dir):
@@ -364,25 +363,24 @@ for infer_input_file in args.infer_input_file:
         assert not args.chinese
         ref_list = []
         hyp_list = []
-        for lines in res:
-            for line in lines:
-                if isinstance(line['response'], list):
-                    ref = line['response'][0]
-                else:
-                    ref = line['response']
-                ref = ' '.join(nltk.word_tokenize(ref.lower()))
-                
-                if isinstance(line['generation'], list):
-                    hyp = line['generation'][0]
-                else:
-                    hyp = line['generation']
-                hyp = ' '.join(nltk.word_tokenize(hyp.lower()))
-                
-                ref_list.append(ref)
-                hyp_list.append(hyp)
+        for line in res:
+            if isinstance(line['response'], list):
+                ref = line['response'][0]
+            else:
+                ref = line['response']
+            ref = ' '.join(nltk.word_tokenize(ref.lower()))
+            
+            if isinstance(line['generation'], list):
+                hyp = line['generation'][0]
+            else:
+                hyp = line['generation']
+            hyp = ' '.join(nltk.word_tokenize(hyp.lower()))
+            
+            ref_list.append(ref)
+            hyp_list.append(hyp)
         
         from metric import NLGEval
-        metric = NLGEval(no_skipthoughts=True)
+        metric = NLGEval()
         metric_res, metric_res_list = metric.compute_metrics([ref_list], hyp_list)
         with open(os.path.join(save_dir, f'metric_nlgeval.json'), 'w') as f:
             json.dump(metric_res, f, ensure_ascii=False, indent=2, sort_keys=True)

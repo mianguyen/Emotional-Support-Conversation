@@ -21,8 +21,8 @@ Siyang Liu*, **Chujie Zheng***, Orianna Demasi, Sahand Sabour, Yu Li, Zhou Yu, Y
 ## Preparing Enviroment
 
 ```bash
-conda env create -f env.yml -n UniModel
-conda activate UniModel
+conda env create -f env.yml -n cuda
+conda activate cuda
 ```
 
 ## Downloading Model
@@ -40,20 +40,20 @@ If you would like to evaluate generated results with Embedding-based similarity,
 
 First, enter `_reformat` and run `python process.py`.
 
-Then, run `bash RUN/esc/prepare_vanilla.sh` to preprocess the training data.
+Then, run `bash RUN/prepare_vanilla.sh` to preprocess the training data.
 
 ## Training Your Model
 
-Run `bash RUN/esc/train_vanilla.sh` to train your model.
+Run `bash RUN/train_vanilla.sh` to train your model.
 
 ## Inference with Your Model
 
-Every time of model training will create a new folder in `DATA/esc/{inputter_name}.{config_name}`, which is named after the time when the training starts. You should select a checkpoint (it may be based on the PPL of validation), and replace the checkpoint path in `RUN/esc/infer_vanilla.sh --load_checkpoint` with the path of your selected checkpoint.
+Every time of model training will create a new folder in `DATA/{inputter_name}.{config_name}`, which is named after the time when the training starts. You should select a checkpoint (it may be based on the PPL of validation), and replace the checkpoint path in `RUN/infer_vanilla.sh --load_checkpoint` with the path of your selected checkpoint.
 
-Then, run `bash RUN/esc/infer_vanilla.sh` to do the inference.
+Then, run `bash RUN/infer_vanilla.sh` to do the inference.
 
-**Note**: When you run `infer_strat.sh`, you can change `GOLDEN_TRUTH` in  `inputter/esc/PARAMS.py` to control whether use the golden strategy during inference.
+**Note**: When you run `infer_strat.sh`, you can change `GOLDEN_TRUTH` in  `inputters/PARAMS.py` to control whether use the golden strategy during inference.
 
 ## Interacting with Your Model
 
-Similar to inference, after designating the checkpoint in `RUN/esc/interact_vanilla.sh --load_checkpoint`, run `bash RUN/esc/interact_vanilla.sh`.
+Similar to inference, after designating the checkpoint in `RUN/interact_vanilla.sh --load_checkpoint`, run `bash RUN/interact_vanilla.sh`.

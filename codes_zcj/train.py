@@ -2,30 +2,27 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
-import json
-import os
-from os.path import join
-import sys
 import argparse
-import logging
-import time
-import tqdm
 import datetime
-import torch
-import random
-from torch import Tensor
+import json
+import logging
+import os
+import sys
+import time
+from os.path import join
+
 import numpy as np
-
-from inputter import inputters
-
-from utils.training_utils import boolean_string, set_seed
-from utils.building_utils import build_model, deploy_model
-
-from utils.optimization import AdamW, get_linear_schedule_with_warmup
-from utils.eval_utils import eval_model_loss
-
+import torch
+import tqdm
+from torch import Tensor
 from torch.distributed import get_rank, get_world_size
+from transformers.optimization import AdamW, get_linear_schedule_with_warmup
+from transformers.trainer_utils import set_seed
+
+from inputters import inputters
+from utils.building_utils import boolean_string, build_model, deploy_model
 from utils.distributed import all_reduce_and_rescale_tensors, all_gather_list
+from utils.eval_utils import eval_model_loss
 
 logging.basicConfig(
     format='%(asctime)s - %(levelname)s - %(name)s -   %(message)s',
@@ -34,25 +31,20 @@ logger = logging.getLogger(__name__)
 
 INF = 100000000
 CACHE_EMPTY_STEP = 10000
-SKIP_SAVED_PARAMS = [
-    'lm_head.weight',
-    'decoder.embed_tokens.weight',
-]
 
 #########################################################################
 # Prepare Parser
 ##########################################################################
 
 parser = argparse.ArgumentParser()
-parser.add_argument("--data_name", type=str)
 parser.add_argument('--config_name', type=str, required=True)
 parser.add_argument('--inputter_name', type=str, required=True)
 parser.add_argument("--seed", type=int, default=42)
+parser.add_argument("--load_checkpoint", '-c', type=str, default=None)
 
-parser.add_argument("--max_src_len", type=int, default=150)
-parser.add_argument("--max_src_turn", type=int, default=None)
-parser.add_argument("--max_tgt_len", type=int, default=50)
-parser.add_argument("--max_knl_len", type=int, default=None)
+parser.add_argument("--max_input_length", type=int, default=150)
+parser.add_argument("--max_decoder_input_length", type=int, default=50)
+parser.add_argument("--max_knowledge_len", type=int, default=None)
 parser.add_argument('--label_num', type=int, default=None)
 parser.add_argument('--only_encode', action='store_true', help='only do encoding')
 
@@ -75,7 +67,7 @@ parser.add_argument("--num_epochs", type=int, default=None,
                     help="how many training epochs")
 
 parser.add_argument('--max_grad_norm', type=float, default=1.0)
-parser.add_argument("--fp16", type=boolean_string, default=True)
+parser.add_argument("--fp16", type=boolean_string, default=False)
 parser.add_argument("--loss_scale", type=float, default=0)
 parser.add_argument('--pbar', type=boolean_string, default=True, help='turn on progress bar')
 
@@ -160,7 +152,6 @@ if args.local_rank == -1 or get_rank() == 0:
 ##########################################################################
 
 names = {
-    'data_name': args.data_name,
     'inputter_name': args.inputter_name,
     'config_name': args.config_name,
 }
@@ -190,10 +181,9 @@ if args.num_epochs is not None:
                                               int(len(train_dataloader) % args.train_batch_size != 0))
 
 dataloader_kwargs = {
-    'max_src_turn': args.max_src_turn,
-    'max_src_len': args.max_src_len,
-    'max_tgt_len': args.max_tgt_len,
-    'max_knl_len': args.max_knl_len,
+    'max_input_length': args.max_input_length,
+    'max_decoder_input_length': args.max_decoder_input_length,
+    'max_knowledge_len': args.max_knowledge_len,
     'label_num': args.label_num,
     'only_encode': args.only_encode,
 }
@@ -207,7 +197,7 @@ eval_dataloader_loss = inputter.valid_dataloader(
 #########################################################################
 # Prepare Model and Optimizer
 #########################################################################
-_, model, encoder_config, decoder_config = build_model(local_rank=args.local_rank, **names)
+_, model = build_model(checkpoint=args.load_checkpoint, local_rank=args.local_rank, **names)
 model = deploy_model(model, args, local_rank=args.local_rank)
 
 if args.local_rank != -1:
@@ -244,14 +234,14 @@ if args.fp16:
 ##########################################################################
 
 timestamp = datetime.datetime.now().strftime('%Y-%m-%d%H%M%S')
-output_dir = join(f'./DATA/{args.data_name}/{args.inputter_name}.{args.config_name}',
+output_dir = join(f'./DATA/{args.inputter_name}.{args.config_name}',
                   f'{timestamp}.{args.learning_rate}.{args.train_batch_size}.{n_gpu}gpu')
 if args.local_rank == -1 or get_rank() == 0:
     os.makedirs(output_dir, exist_ok=True)
     with open(join(output_dir, 'args.json'), 'w', encoding='utf-8') as f:
         json.dump(init_args_dict, f, ensure_ascii=False, indent=2)
-    with open(join(output_dir, 'config.json'), 'w', encoding='utf-8') as f:
-        with open(f'./CONFIG/{args.data_name}/{args.config_name}.json', 'r', encoding='utf-8') as ff:
+    with open(join(output_dir, 'custom_config.json'), 'w', encoding='utf-8') as f:
+        with open(f'./CONFIG/{args.config_name}.json', 'r', encoding='utf-8') as ff:
             json.dump(json.load(ff), f, ensure_ascii=False, indent=2)
 
 if args.local_rank == -1 or get_rank() == 0:
@@ -291,6 +281,8 @@ while True:
         
         if 'input_ids' in batch:
             input_ids = batch['input_ids']
+        elif 'tgt_input_ids' in batch:
+            input_ids = batch['tgt_input_ids']
         else:
             assert 'src_input_ids' in batch
             input_ids = batch['src_input_ids']
@@ -372,11 +364,10 @@ while True:
             if args.num_epochs is None and global_step % args.valid_step == 0:# and epoch > 0:
                 if args.local_rank == -1 or get_rank() == 0:
                     # only rank 0 process evaluate
-                    torch.save(
-                        {k: v.cpu() if v is not None else None  # save to cpu tensors
-                         for k, v in model.state_dict().items() if all(PARAM not in k for PARAM in SKIP_SAVED_PARAMS)},
-                        join(output_dir, f'{global_step}.pkl'))
-    
+                    torch.save(model.state_dict(), join(output_dir, f'{global_step}.bin'))
+                    toker.save_vocabulary(output_dir)
+                    model.config.to_json_file(join(output_dir, f'config.json'))
+
                     eval_loss, eval_ppl, eval_samples, *_ = eval_model_loss(
                         model=model,
                         eval_dataloader=eval_dataloader_loss,
@@ -398,10 +389,9 @@ while True:
     if args.num_epochs is not None:
         if args.local_rank == -1 or get_rank() == 0:
             # only rank 0 process evaluate
-            torch.save(
-                {k: v.cpu() if v is not None else None  # save to cpu tensors
-                 for k, v in model.state_dict().items() if all(PARAM not in k for PARAM in SKIP_SAVED_PARAMS)},
-                join(output_dir, f'epoch-{epoch}.pkl'))
+            torch.save(model.state_dict(), join(output_dir, f'epoch-{epoch}.bin'))
+            toker.save_vocabulary(output_dir)
+            model.config.to_json_file(join(output_dir, f'config.json'))
     
             eval_loss, eval_ppl, eval_samples, *_ = eval_model_loss(
                 model=model,

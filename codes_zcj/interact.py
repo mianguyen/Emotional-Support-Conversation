@@ -10,10 +10,10 @@ import logging
 import argparse
 import random
 
-from utils.training_utils import boolean_string, set_seed
-from utils.building_utils import build_model, deploy_model
-from inputter import inputters
-from inputter.inputter_utils import _norm
+from transformers.trainer_utils import set_seed
+from utils.building_utils import boolean_string, build_model, deploy_model
+from inputters import inputters
+from inputters.inputter_utils import _norm
 
 
 def cut_seq_to_eos(sentence, eos, remove_id=None):
@@ -37,15 +37,16 @@ logger = logging.getLogger(__name__)
 
 
 parser = argparse.ArgumentParser()
-parser.add_argument('--data_name', type=str, required=True)
 parser.add_argument('--config_name', type=str, required=True)
 parser.add_argument('--inputter_name', type=str, required=True)
 parser.add_argument("--seed", type=int, default=42)
 parser.add_argument("--load_checkpoint", '-c', type=str, default=None)
 parser.add_argument("--fp16", type=boolean_string, default=False)
-parser.add_argument("--max_src_len", type=int, default=256)
+
+parser.add_argument("--single_turn", action='store_true')
+parser.add_argument("--max_input_length", type=int, default=256)
 parser.add_argument("--max_src_turn", type=int, default=20)
-parser.add_argument("--max_tgt_len", type=int, default=64)
+parser.add_argument("--max_decoder_input_length", type=int, default=64)
 parser.add_argument("--max_knl_len", type=int, default=64)
 parser.add_argument('--label_num', type=int, default=None)
 
@@ -67,13 +68,18 @@ device = torch.device("cuda" if torch.cuda.is_available() and args.use_gpu else 
 n_gpu = torch.cuda.device_count()
 args.device, args.n_gpu = device, n_gpu
 
-output_dir = args.load_checkpoint + '_interact_dialogs'
+if args.load_checkpoint is not None:
+    output_dir = args.load_checkpoint + '_interact_dialogs'
+else:
+    os.makedirs('./DEMO', exist_ok=True)
+    output_dir = './DEMO/' + args.config_name
+    if args.single_turn:
+        output_dir = output_dir + '_1turn'
 os.makedirs(output_dir, exist_ok=True)
 
 #set_seed(args.seed)
 
 names = {
-    'data_name': args.data_name,
     'inputter_name': args.inputter_name,
     'config_name': args.config_name,
 }
@@ -86,11 +92,12 @@ model.eval()
 inputter = inputters[args.inputter_name]()
 dataloader_kwargs = {
     'max_src_turn': args.max_src_turn,
-    'max_src_len': args.max_src_len,
-    'max_tgt_len': args.max_tgt_len,
+    'max_input_length': args.max_input_length,
+    'max_decoder_input_length': args.max_decoder_input_length,
     'max_knl_len': args.max_knl_len,
     'label_num': args.label_num,
 }
+
 
 pad = toker.pad_token_id
 if pad is None:
@@ -125,6 +132,8 @@ history = {'dialog': [],}
 print('\n\nA new conversation starts!')
 while True:
     try:
+        if args.single_turn and len(history['dialog']) > 0:
+            raise EOFError
         raw_text = input("Human: ")
         while not raw_text:
             print('Prompt should not be empty!')
@@ -135,9 +144,12 @@ while True:
             raise e
         eof_once = True
         save_name = datetime.datetime.now().strftime('%Y-%m-%d%H%M%S')
-        if len(history['dialog']) > 4:
-            with open(os.path.join(output_dir, save_name + '.json'), 'w') as f:
-                json.dump(history, f, ensure_ascii=False, indent=2)
+        try:
+            if len(history['dialog']) > 0:
+                with open(os.path.join(output_dir, save_name + '.json'), 'w') as f:
+                    json.dump(history, f, ensure_ascii=False, indent=2)
+        except PermissionError as e:
+            pass
         
         history = {'dialog': [],}
         print('\n\nA new conversation starts!')
@@ -146,19 +158,17 @@ while True:
     history['dialog'].append({
         'text': _norm(raw_text),
         'speaker': 'usr',
-        'segment_id': 0,
     })
     
     # generate response
     history['dialog'].append({ # dummy tgt
         'text': 'n/a',
         'speaker': 'sys',
-        'strategy': 0,
     })
     inputs = inputter.convert_data_to_inputs(history, toker, **dataloader_kwargs)
     inputs = inputs[-1:]
     features = inputter.convert_inputs_to_features(inputs, toker, **dataloader_kwargs)
-    batch = inputter.prepare_infer_batch(features, toker, interact=True)
+    batch = inputter.prepare_infer_batch(features, toker)
     batch = {k: v.to(device) if isinstance(v, Tensor) else v for k, v in batch.items()}
     batch.update(generation_kwargs)
     encoded_info, generations = model.generate(**batch)
@@ -173,8 +183,5 @@ while True:
         'text': text,
         'speaker': 'sys',
     })
-    if 'pred_strat_id' in encoded_info:
-        history['dialog'][-1]['strategy'] = encoded_info['pred_strat_id'].cpu().tolist()[0]
-
     
 
