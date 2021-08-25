@@ -1,4 +1,6 @@
 # Emotional-Support-Conversation
+### *Copyright © 2021 CoAI Group, Tsinghua University. All rights reserved. Data and codes are for academic research use only.*
+
 Data and codes for the ACL 2021 paper: [**Towards Emotional Support Dialog Systems**](https://arxiv.org/abs/2106.01144)
 
 If you use our codes or your research is related to our paper, please kindly cite our paper:
@@ -34,7 +36,7 @@ The corpus file is `ESConv.json`. We have collected **more** conversations with 
 \* denotes the new topics added during the second collection. We hope new data supports the future research in transferring the ability of models from old topics to new ones. 
 
 <font size=1>
-  
+
 #### Strategy Category 
 | Strategy Category| Number   |
 | :--------------  | :------- |
@@ -46,7 +48,7 @@ The corpus file is `ESConv.json`. We have collected **more** conversations with 
 | Reflection of feelings | 1580(7.9%) | 
 | Information | 1316(6.6%) | 
 | Restatement or Paraphrasing | 1184(5.9%) |
-  
+
 </font>
 
 
