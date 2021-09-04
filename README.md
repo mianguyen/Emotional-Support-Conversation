@@ -23,14 +23,14 @@ If you use our codes or your research is related to our paper, please kindly cit
 
 ## Data
 
-The corpus file is `ESConv.json`. We have collected **more** conversations with more problem topics. ESConv now contians 1,410 conversations with 10 topic problems.
+The corpus file is `ESConv.json`. We have collected **more** conversations with more problem topics. ESConv now contians 1,300 conversations with 10 topic problems.
 
 ### Statistics
 #### Problem Category
 
 | Problem Category | ongoing depression | breakup with partner | job crisis | problems with friends | academic pressure | procras-<br>tination* | alcohol abuse* | issues with parent* | sleep problems* |  appearance anxiety* | school bullying* | issues with children* |
 | :-------- | :---------- | :---------- |  :---------- |  :---------- |  :---------- |  :---------- |  :---------- |  :---------- |  :---------- |  :---------- | :---------- | :---------- | 
-| Number| 386 |260 | 317 | 191 | 172 |  13 | 12 | 18 | 28 | 12 | 2 | 10 |
+| Number| 351 | 239 | 280 | 179 | 156 |  13 | 12 | 18 | 28 | 12 | 2 | 10 |
 
 
 \* denotes the new topics added during the second collection. We hope new data supports the future research in transferring the ability of models from old topics to new ones. 
@@ -40,14 +40,14 @@ The corpus file is `ESConv.json`. We have collected **more** conversations with 
 #### Strategy Category 
 | Strategy Category| Number   |
 | :--------------  | :------- |
-| Questions | 4138(20.7%)|
-| Self-disclosure | 1836(9.1%) |
-| Affirmation and Reassurance | 3058(15.3%) |
-| Providing Suggestions | 3237(16.2%) |
-| Other | 3661(18.3%) |
-| Reflection of feelings | 1580(7.9%) | 
-| Information | 1316(6.6%) | 
-| Restatement or Paraphrasing | 1184(5.9%) |
+| Questions | 3801(20.7%)|
+| Self-disclosure | 1713(9.3%) |
+| Affirmation and Reassurance | 2827(15.4%) |
+| Providing Suggestions | 2954(16.1%) |
+| Other | 3661(18.3%) / 3341(18.2%) |
+| Reflection of feelings |  1436(7.8%) | 
+| Information | 1215(6.6%) | 
+| Restatement or Paraphrasing | 1089(5.9%) |
 
 </font>
 
