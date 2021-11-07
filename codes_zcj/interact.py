@@ -13,7 +13,7 @@ import random
 from transformers.trainer_utils import set_seed
 from utils.building_utils import boolean_string, build_model, deploy_model
 from inputters import inputters
-from inputters.inputter_utils import _norm
+from inputters.inputter_utils import _norm, get_strategy
 
 
 def cut_seq_to_eos(sentence, eos, remove_id=None):
@@ -61,8 +61,14 @@ parser.add_argument("--repetition_penalty", type=float, default=1.0)
 parser.add_argument("--no_repeat_ngram_size", type=int, default=0)
 
 parser.add_argument("--use_gpu", action='store_true')
+parser.add_argument("--strategy_path", type=str, default='')
 
 args = parser.parse_args()
+params_error_free = True
+if args.config_name == 'strat' and  args.strategy_path == '':
+    params_error_free = False
+
+assert params_error_free == True, 'please specify path where strategies are listed'
 
 device = torch.device("cuda" if torch.cuda.is_available() and args.use_gpu else "cpu")
 n_gpu = torch.cuda.device_count()
@@ -127,9 +133,13 @@ generation_kwargs = {
     'eos_token_id': eos,
 }
 
+if 'strat' in args.config_name:
+    generation_kwargs['strat_id'] = None
+
 eof_once = False
 history = {'dialog': [],}
 print('\n\nA new conversation starts!')
+num_turn = 0
 while True:
     try:
         if args.single_turn and len(history['dialog']) > 0:
@@ -139,6 +149,15 @@ while True:
             print('Prompt should not be empty!')
             raw_text = input("Human: ")
         eof_once = False
+        if 'bye' in raw_text:
+            print("   AI: "+ "okay, take care")
+            save_name = datetime.datetime.now().strftime('%Y-%m-%d%H%M%S')
+            if len(history['dialog']) > 0:
+                with open(os.path.join(output_dir, save_name + '.json'), 'w') as f:
+                    json.dump(history, f, ensure_ascii=False, indent=2)
+            break
+
+        num_turn += 1
     except (EOFError, KeyboardInterrupt) as e:
         if eof_once:
             raise e
@@ -164,9 +183,12 @@ while True:
     history['dialog'].append({ # dummy tgt
         'text': 'n/a',
         'speaker': 'sys',
+        'strategy': "Question", 
     })
     inputs = inputter.convert_data_to_inputs(history, toker, **dataloader_kwargs)
+
     inputs = inputs[-1:]
+    # print("inputs",inputs)
     features = inputter.convert_inputs_to_features(inputs, toker, **dataloader_kwargs)
     batch = inputter.prepare_infer_batch(features, toker)
     batch = {k: v.to(device) if isinstance(v, Tensor) else v for k, v in batch.items()}
@@ -174,14 +196,28 @@ while True:
     encoded_info, generations = model.generate(**batch)
     
     out = generations[0].tolist()
+    # print(generations)
     out = cut_seq_to_eos(out, eos)
     text = toker.decode(out).encode('ascii', 'ignore').decode('ascii').strip()
     print("   AI: " + text)
-    
+
+    # print("history before",history)
     history['dialog'].pop()
-    history['dialog'].append({
-        'text': text,
-        'speaker': 'sys',
-    })
+    if 'pred_strat_id' in  encoded_info.keys():
+        strategy = get_strategy(encoded_info['pred_strat_id'], args.strategy_path)
+        history['dialog'].append({
+            'text': text,
+            'speaker': 'sys',
+            'strategy': strategy.strip('[]')
+        })
+    else: 
+        history['dialog'].append({
+            'text': text,
+            'speaker': 'sys',
+        })
+    print(history)
+
+    # print("history after", history)
+    # exit()
     
 
